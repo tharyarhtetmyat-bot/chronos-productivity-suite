@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+<meta name="description" content="Chronos — a private, client-side productivity suite: calendar, weekly schedule, habits, budget, tasks, notes and analytics, encrypted in your browser.">
+<meta name="theme-color" content="#2383e2">
+<meta name="color-scheme" content="light dark">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="assets/icon.png">
+  <title>Chronos — Personal Productivity Suite</title>
+  <link rel="icon" href="assets/icon.png" type="image/png">
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/animations.css">
+</head>
+<body>
+  <div id="toast-container" class="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+  <!-- MOBILE SIDEBAR BACKDROP -->
+  <div id="sidebar-backdrop" class="sidebar-backdrop hidden" aria-hidden="true"></div>
+
+  <!-- AUTH MODAL CONTAINER -->
+  <div id="auth-modal-overlay" class="modal-overlay hidden">
+    <div class="modal-card auth-card" role="dialog" aria-modal="true">
+      <div class="auth-header">
+        <div class="brand-container small">
+          <img src="assets/icon.png" alt="Chronos Logo" class="brand-logo-img">
+          <div class="avatar logo-gradient fallback-icon" style="display: none;">CH</div>
+          <span class="brand-name">Chronos</span>
+        </div>
+        <h3 id="auth-title">Welcome Back</h3>
+        <p id="auth-subtitle" class="text-muted">Sign in to your account to access your workspace</p>
+      </div>
+
+      <!-- LOGIN FORM -->
+      <form id="login-form" class="stacked-form">
+        <div class="form-group">
+          <label for="login-username">Username</label>
+          <input type="text" id="login-username" placeholder="Enter your username" required autocomplete="username">
+        </div>
+        <div class="form-group">
+          <label for="login-password">Password</label>
+          <input type="password" id="login-password" placeholder="Enter your password" required autocomplete="current-password">
+        </div>
+        <div style="text-align: right; margin-top: -6px;">
+          <a href="#" id="show-forgot-btn" style="font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: 600;">Forgot password?</a>
+        </div>
+        <button type="submit" class="btn primary full-width">Sign In</button>
+        <p class="auth-switch-text">
+          Don't have an account? <a href="#" id="show-signup-btn">Create one</a>
+        </p>
+      </form>
+
+      <!-- SIGNUP FORM (STEP 1) -->
+      <form id="signup-form" class="stacked-form hidden">
+        <div class="form-group">
+          <label for="signup-name">Full Name</label>
+          <input type="text" id="signup-name" placeholder="e.g. Thar Yar Htet Myat" required autocomplete="name">
+        </div>
+        <div class="form-group">
+          <label for="signup-username">Username</label>
+          <input type="text" id="signup-username" placeholder="Choose a username" required autocomplete="username">
+        </div>
+        <div class="form-group">
+          <label for="signup-password">Password</label>
+          <input type="password" id="signup-password" placeholder="At least 8 characters" minlength="8" required autocomplete="new-password">
+        </div>
+        <button type="submit" class="btn primary full-width">Create Account</button>
+        <p class="auth-switch-text">
+          Already have an account? <a href="#" id="show-login-btn">Sign in</a>
+        </p>
+      </form>
+
+      <!-- SECURITY QUESTION POPUP FORM (STEP 2 OF SIGNUP) -->
+      <form id="signup-security-popup-form" class="stacked-form hidden">
+        <div style="text-align: center; margin-bottom: 4px;">
+          <span style="font-size: 0.82rem; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: 0.05em;">Security Setup</span>
+          <p style="font-size: 0.86rem; color: var(--text-muted); margin-top: 4px;">Configure a security question & secret word to protect account recovery before finalization.</p>
+        </div>
+        <div class="form-group">
+          <label for="popup-signup-hint">Security Hint Question</label>
+          <input type="text" id="popup-signup-hint" placeholder="e.g. What was my first tactical game?" required>
+        </div>
+        <div class="form-group">
+          <label for="popup-signup-secret">Secret Word (Answer)</label>
+          <input type="text" id="popup-signup-secret" placeholder="Your secret recovery word" required>
+        </div>
+        <button type="submit" class="btn primary full-width">Finalize Account Creation</button>
+      </form>
+
+      <!-- FORGOT PASSWORD FORM -->
+      <form id="forgot-form" class="stacked-form hidden">
+        <div class="form-group">
+          <label for="forgot-username">Username</label>
+          <div style="display: flex; gap: 8px;">
+            <input type="text" id="forgot-username" placeholder="Enter your username" required style="flex: 1;">
+            <button type="button" id="load-hint-btn" class="btn secondary">Get Hint</button>
+          </div>
+        </div>
+        <div id="forgot-hint-box" class="result-box hidden" style="margin-top: 0; padding: 10px; background: var(--bg-sidebar); border-radius: var(--radius); border: 1px solid var(--border);">
+          <small style="color: var(--text-muted); display: block; font-weight: 700;">SECURITY HINT:</small>
+          <span id="forgot-hint-text" style="font-weight: 600; color: var(--text-main);"></span>
+        </div>
+        <div id="forgot-step-2" class="stacked-form hidden">
+          <div class="form-group">
+            <label for="forgot-secret">Secret Word</label>
+            <input type="text" id="forgot-secret" placeholder="Enter your secret word" required>
+          </div>
+          <div class="form-group">
+            <label for="forgot-new-password">New Password</label>
+            <input type="password" id="forgot-new-password" placeholder="Enter new password" minlength="8" required>
+          </div>
+          <button type="submit" class="btn primary full-width">Reset Password</button>
+        </div>
+        <p class="auth-switch-text">
+          Remembered your password? <a href="#" id="back-to-login-btn">Back to Sign In</a>
+        </p>
+      </form>
+    </div>
+  </div>
+
+  <!-- PASSWORD CONFIRMATION MODAL FOR PROFILE SECURITY QUESTION UPDATE -->
+  <div id="password-prompt-modal-overlay" class="modal-overlay hidden">
+    <div class="modal-card auth-card" role="dialog" aria-modal="true">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h3 style="font-size: 1.2rem; font-weight: 800;">Confirm Password</h3>
+        <button type="button" id="close-password-prompt-btn" class="icon-btn" aria-label="Close">✕</button>
+      </div>
+      <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 16px;">Please enter your account password to authorize updating your security question and secret word.</p>
+      <form id="password-prompt-form" class="stacked-form">
+        <div class="form-group">
+          <label for="prompt-password-input">Current Password</label>
+          <input type="password" id="prompt-password-input" placeholder="Enter your password" required autocomplete="current-password">
+        </div>
+        <button type="submit" class="btn primary full-width">Authorize & Save</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- EDIT MODAL -->
+  <div id="edit-modal-overlay" class="modal-overlay hidden">
+    <div class="modal-card auth-card" role="dialog" aria-modal="true">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h3 id="edit-modal-title" style="font-size: 1.2rem; font-weight: 800;">Edit Item</h3>
+        <button type="button" id="close-edit-modal-btn" class="icon-btn" aria-label="Close">✕</button>
+      </div>
+
+      <form id="edit-event-form" class="stacked-form hidden">
+        <input type="hidden" id="edit-event-id">
+        <div class="form-group">
+          <label for="edit-event-title">Event Description</label>
+          <input type="text" id="edit-event-title" required>
+        </div>
+        <div class="form-group">
+          <label for="edit-event-date">Date</label>
+          <input type="date" id="edit-event-date" required>
+        </div>
+        <div class="form-group">
+          <label for="edit-event-time">Reminder Time (Optional)</label>
+          <input type="time" id="edit-event-time">
+        </div>
+        <button type="submit" class="btn primary full-width">Save Event Changes</button>
+      </form>
+
+      <form id="edit-timetable-form" class="stacked-form hidden">
+        <input type="hidden" id="edit-tt-id">
+        <div class="form-group">
+          <label for="edit-tt-title">Subject / Activity</label>
+          <input type="text" id="edit-tt-title" required>
+        </div>
+        <div class="form-group">
+          <label for="edit-tt-day">Day of Week</label>
+          <select id="edit-tt-day">
+            <option value="Monday">Monday</option>
+            <option value="Tuesday">Tuesday</option>
+            <option value="Wednesday">Wednesday</option>
+            <option value="Thursday">Thursday</option>
+            <option value="Friday">Friday</option>
+            <option value="Saturday">Saturday</option>
+            <option value="Sunday">Sunday</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <div class="form-group" style="flex: 1;">
+            <label for="edit-tt-start">Start Time</label>
+            <input type="time" id="edit-tt-start" required>
+          </div>
+          <div class="form-group" style="flex: 1;">
+            <label for="edit-tt-end">End Time</label>
+            <input type="time" id="edit-tt-end" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="edit-tt-location">Location / Room</label>
+          <input type="text" id="edit-tt-location" placeholder="Optional">
+        </div>
+        <button type="submit" class="btn primary full-width">Save Schedule Changes</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="app-layout">
+    <!-- SIDEBAR -->
+    <aside class="sidebar" id="app-sidebar" aria-label="Main Navigation">
+      <div class="sidebar-header">
+        <div class="brand-container">
+          <img src="assets/icon.png" alt="Chronos Icon" class="brand-logo-img">
+          <div class="avatar logo-gradient fallback-icon" style="display: none;">CH</div>
+          <span class="brand-name">Chronos</span>
+        </div>
+        <button id="sidebar-close-btn" class="icon-btn mobile-only" aria-label="Close Sidebar">✕</button>
+      </div>
+
+      <div class="sidebar-search">
+        <button id="global-search-trigger" class="search-btn">
+          <span class="search-icon">🔍</span>
+          <span class="search-placeholder">Quick Command...</span>
+          <kbd class="desktop-only">Ctrl+K</kbd>
+        </button>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-group-label">WORKSPACE</div>
+        <button class="nav-item active" data-tab="dashboard">
+          <span class="nav-icon">🏠</span>
+          <span class="nav-label">Home</span>
+          <span class="nav-shortcut desktop-only">Alt+0</span>
+        </button>
+        <button class="nav-item" data-tab="calendar">
+          <span class="nav-icon">📅</span>
+          <span class="nav-label">Calendar & Events</span>
+          <span class="nav-shortcut desktop-only">Alt+1</span>
+        </button>
+        <button class="nav-item" data-tab="timetable">
+          <span class="nav-icon">🗓️</span>
+          <span class="nav-label">Weekly Schedule</span>
+          <span class="nav-shortcut desktop-only">Alt+2</span>
+        </button>
+
+        <div class="nav-group-label">LOGS & TRACKERS</div>
+        <button class="nav-item" data-tab="habits">
+          <span class="nav-icon">⚡</span>
+          <span class="nav-label">Habits</span>
+          <span class="nav-shortcut desktop-only">Alt+3</span>
+        </button>
+        <button class="nav-item" data-tab="budget">
+          <span class="nav-icon">💳</span>
+          <span class="nav-label">Finance & Budget</span>
+          <span class="nav-shortcut desktop-only">Alt+4</span>
+        </button>
+        <button class="nav-item" data-tab="tasks">
+          <span class="nav-icon">🎯</span>
+          <span class="nav-label">Tasks & Focus</span>
+          <span class="nav-shortcut desktop-only">Alt+5</span>
+        </button>
+        <button class="nav-item" data-tab="notes">
+          <span class="nav-icon">📝</span>
+          <span class="nav-label">Notes & Scratchpad</span>
+          <span class="nav-shortcut desktop-only">Alt+6</span>
+        </button>
+        <button class="nav-item" data-tab="analytics">
+          <span class="nav-icon">📊</span>
+          <span class="nav-label">Analytics</span>
+          <span class="nav-shortcut desktop-only">Alt+7</span>
+        </button>
+
+        <div class="nav-group-label">ACCOUNT</div>
+        <button class="nav-item" data-tab="profile">
+          <span class="nav-icon">👤</span>
+          <span class="nav-label">Profile & Security</span>
+          <span class="nav-shortcut desktop-only">Alt+8</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="user-profile-badge" id="user-profile-badge" style="cursor: pointer;" title="Open Profile & Security">
+          <div class="user-avatar" id="user-avatar-initials">--</div>
+          <div class="user-details">
+            <span class="user-name" id="user-display-name">Guest</span>
+            <span class="user-status" id="user-status-text">● Offline</span>
+          </div>
+          <button id="logout-btn" class="icon-btn logout-icon-btn" title="Sign Out">🚪</button>
+        </div>
+
+        <div class="sidebar-actions-grid">
+          <button id="theme-toggle-btn" class="sidebar-action-btn">
+            <span class="action-icon">🌙</span> Dark
+          </button>
+          <button id="export-data-btn" class="sidebar-action-btn" title="Export Backup">💾 Backup</button>
+          <label for="import-data-file" class="sidebar-action-btn" title="Restore Data" style="cursor: pointer;">📂 Restore</label>
+          <input type="file" id="import-data-file" accept=".json" style="display: none;">
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN CONTENT CANVAS -->
+    <main class="main-content" id="main-content">
+      <header class="top-bar">
+        <div class="breadcrumb">
+          <button id="sidebar-toggle-btn" class="icon-btn" aria-label="Toggle Sidebar">☰</button>
+          <span class="icon-prefix" id="top-bar-icon">🏠</span>
+          <span id="top-bar-title" class="breadcrumb-current">Home</span>
+        </div>
+        <div class="top-bar-controls">
+          <button id="notif-quick-btn" class="btn ghost" style="padding: 4px 10px; min-height: 30px; font-size: 0.78rem;" title="Enable Push Notifications">
+            🔔 <span id="notif-status-badge">Enable Alerts</span>
+          </button>
+          <div class="status-indicator desktop-only">
+            <span class="pulse-dot"></span> Status: <strong id="sync-status">Encrypted (AES-GCM)</strong>
+          </div>
+        </div>
+      </header>
+
+      <div class="content-body">
+        <!-- DASHBOARD TAB -->
+        <section id="tab-dashboard" class="tab-content active">
+          <div class="notion-page-header">
+            <h1 class="page-title">Chronos Workspace 👋</h1>
+            <p id="current-date-display" class="page-subtitle"></p>
+          </div>
+
+          <div class="metrics-grid">
+            <div class="metric-card">
+              <div class="metric-header">
+                <span>Pending Tasks</span>
+                <span class="metric-trend upward">↑ Active</span>
+              </div>
+              <strong id="dash-tasks-count" class="metric-value">0</strong>
+            </div>
+            <div class="metric-card">
+              <div class="metric-header">
+                <span>Active Habits</span>
+                <span class="metric-trend neutral">● Tracked</span>
+              </div>
+              <strong id="dash-habits-count" class="metric-value">0</strong>
+            </div>
+            <div class="metric-card">
+              <div class="metric-header">
+                <span>Net Balance</span>
+                <span id="dash-balance-trend" class="metric-trend positive">+0.0%</span>
+              </div>
+              <strong id="dash-balance" class="metric-value">$0.00</strong>
+            </div>
+          </div>
+
+          <div class="dashboard-widgets-grid">
+            <div class="panel widget-panel">
+              <h3>Today's Agenda & Schedule</h3>
+              <ul id="dash-agenda-list" class="item-list"></ul>
+            </div>
+            <div class="panel widget-panel">
+              <h3>Recent Activity</h3>
+              <ul id="dash-activity-log" class="item-list"></ul>
+            </div>
+          </div>
+        </section>
+
+        <!-- CALENDAR TAB -->
+        <section id="tab-calendar" class="tab-content">
+          <div class="notion-page-header">
+            <h1 class="page-title">Calendar & Milestone Planner</h1>
+            <p class="page-subtitle">Tap any day block to target that date instantly, or edit/delete existing events below.</p>
+          </div>
+
+          <div class="panel">
+            <div class="panel-header-actions">
+              <h3 id="cal-month-year">Month Year</h3>
+              <div class="button-group">
+                <button id="cal-prev" class="btn ghost">← Prev</button>
+                <button id="cal-today" class="btn secondary">Today</button>
+                <button id="cal-next" class="btn ghost">Next →</button>
+              </div>
+            </div>
+            <div class="calendar-scroll-wrapper">
+              <div class="calendar-grid-header">
+                <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+              </div>
+              <div id="calendar-grid" class="calendar-grid"></div>
+            </div>
+          </div>
+
+          <div class="panel" id="event-form-panel">
+            <h3>Add Event / Reminder</h3>
+            <form id="event-form" class="inline-form">
+              <input type="text" id="event-title" placeholder="Event description..." required>
+              <input type="date" id="event-date" required>
+              <input type="time" id="event-time" title="Optional reminder time">
+              <button type="submit" class="btn primary">Add Event</button>
+            </form>
+            <ul id="event-list" class="item-list margin-top-md"></ul>
+          </div>
+        </section>
+
+        <!-- TIMETABLE TAB -->
+        <section id="tab-timetable" class="tab-content">
+          <div class="notion-page-header">
+            <h1 class="page-title">Weekly Schedule Matrix</h1>
+            <p class="page-subtitle">Structure your weekly coursework and recurring blocks.</p>
+          </div>
+
+          <div class="panel">
+            <h3>Add Schedule Block</h3>
+            <form id="timetable-form" class="stacked-form">
+              <div class="form-row">
+                <input type="text" id="tt-title" placeholder="Subject / Activity" required style="flex: 2;">
+                <select id="tt-day" style="flex: 1;">
+                  <option value="Monday">Monday</option>
+                  <option value="Tuesday">Tuesday</option>
+                  <option value="Wednesday">Wednesday</option>
+                  <option value="Thursday">Thursday</option>
+                  <option value="Friday">Friday</option>
+                  <option value="Saturday">Saturday</option>
+                  <option value="Sunday">Sunday</option>
+                </select>
+              </div>
+              <div class="form-row">
+                <input type="time" id="tt-start" required style="flex: 1;">
+                <input type="time" id="tt-end" required style="flex: 1;">
+                <input type="text" id="tt-location" placeholder="Location / Room (Optional)" style="flex: 1;">
+              </div>
+              <button type="submit" class="btn primary">Add Schedule Block</button>
+            </form>
+          </div>
+
+          <div class="panel">
+            <h3>Weekly Schedule</h3>
+            <div id="timetable-matrix" class="timetable-matrix"></div>
+          </div>
+        </section>
+
+        <!-- HABITS TAB -->
+        <section id="tab-habits" class="tab-content">
+          <div class="notion-page-header">
+            <h1 class="page-title">Habits</h1>
+            <p class="page-subtitle">Build streak consistency with daily check-ins and tracking.</p>
+          </div>
+
+          <div class="panel">
+            <h3>Create Habit Tracker</h3>
+            <form id="habit-form" class="inline-form">
+              <input type="text" id="habit-name" placeholder="Habit name" required>
+              <input type="text" id="habit-category" placeholder="Category" required>
+              <button type="submit" class="btn primary">Add Habit</button>
+            </form>
+          </div>
+
+          <div class="panel">
+            <h3>Active Habits</h3>
+            <ul id="habit-list" class="item-list"></ul>
+          </div>
+        </section>
+
+        <!-- BUDGET TAB -->
+        <section id="tab-budget" class="tab-content">
+          <div class="notion-page-header">
+            <h1 class="page-title">Financial Tracker & Bill Splitter</h1>
+            <p class="page-subtitle">Track income, expense logs, and split shared costs.</p>
+          </div>
+
+          <div class="metrics-grid">
+            <div class="metric-card"><span>Total Balance</span><strong id="total-balance" class="metric-value">$0.00</strong></div>
+            <div class="metric-card"><span>Monthly Income</span><strong id="total-income" class="metric-value positive">$0.00</strong></div>
+            <div class="metric-card"><span>Monthly Expenses</span><strong id="total-expenses" class="metric-value negative">$0.00</strong></div>
+          </div>
+
+          <div class="panel-group">
+            <div class="panel">
+              <h3>Record Transaction</h3>
+              <form id="transaction-form" class="stacked-form">
+                <input type="text" id="trans-title" placeholder="Description" required>
+                <input type="number" id="trans-amount" placeholder="Amount ($)" step="0.01" required>
+                <select id="trans-type">
+                  <option value="expense">Expense</option>
+                  <option value="income">Income</option>
+                </select>
+                <button type="submit" class="btn primary">Log Transaction</button>
+              </form>
+            </div>
+
+            <div class="panel">
+              <h3>Quick Bill Splitter</h3>
+              <form id="splitter-form" class="stacked-form">
+                <input type="number" id="split-total" placeholder="Total Bill ($)" step="0.01" required>
+                <input type="number" id="split-people" placeholder="Number of People" min="1" value="2" required>
+                <button type="button" id="calc-split-btn" class="btn secondary">Calculate Split</button>
+              </form>
+              <div id="split-result" class="result-box">Each person pays: <strong>$0.00</strong></div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <h3>Transaction Ledger</h3>
+            <ul id="transaction-list" class="item-list"></ul>
+          </div>
+        </section>
+
+        <!-- TASKS & TIMER TAB -->
+        <section id="tab-tasks" class="tab-content">
+          <div class="notion-page-header">
+            <h1 class="page-title">Tasks & Focus Timer</h1>
+            <p class="page-subtitle">Manage project work states and stay focused with Pomodoro sprints.</p>
+          </div>
+
+          <div class="timer-container panel">
+            <div class="timer-badge">POMODORO TIMER</div>
+            <h2 id="timer-display">25:00</h2>
+            <div class="timer-controls">
+              <button id="start-timer-btn" class="btn primary">Start Focus</button>
+              <button id="pause-timer-btn" class="btn secondary">Pause</button>
+              <button id="reset-timer-btn" class="btn ghost">Reset</button>
+            </div>
+          </div>
+
+          <div class="panel">
+            <h3>New Task Card</h3>
+            <form id="task-form" class="inline-form">
+              <input type="text" id="task-title" placeholder="Task details..." required>
+              <button type="submit" class="btn primary">Create Task</button>
+            </form>
+          </div>
+
+          <div class="kanban-board">
+            <div class="kanban-col">
+              <h4>To Do</h4>
+              <div id="col-todo" class="task-col"></div>
+            </div>
+            <div class="kanban-col">
+              <h4>In Progress</h4>
+              <div id="col-inprogress" class="task-col"></div>
+            </div>
+            <div class="kanban-col">
+              <h4>Completed</h4>
+              <div id="col-done" class="task-col"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- QUICK NOTES TAB -->
+        <section id="tab-notes" class="tab-content">
+          <div class="notion-page-header">
+            <h1 class="page-title">Notes & Scratchpad</h1>
+            <p class="page-subtitle">Instant notes, code snippets, and daily logs.</p>
+          </div>
+
+          <div class="panel">
+            <h3>New Scratchpad Entry</h3>
+            <form id="note-form" class="stacked-form">
+              <input type="text" id="note-title" placeholder="Topic / Title..." required>
+              <textarea id="note-content" placeholder="Write your thoughts..." rows="4" required></textarea>
+              <button type="submit" class="btn primary">Save Note</button>
+            </form>
+          </div>
+
+          <div id="notes-grid" class="notes-grid"></div>
+        </section>
+
+        <!-- ANALYTICS TAB -->
+        <section id="tab-analytics" class="tab-content">
+          <div class="notion-page-header">
+            <h1 class="page-title">Analytics</h1>
+            <p class="page-subtitle">Real-time statistics on your workspace throughput and habits.</p>
+          </div>
+
+          <div class="metrics-grid">
+            <div class="metric-card"><span>Total Tasks Logged</span><strong id="analytics-total-tasks" class="metric-value">0</strong></div>
+            <div class="metric-card"><span>Completion Rate</span><strong id="analytics-completion-rate" class="metric-value positive">0%</strong></div>
+            <div class="metric-card"><span>Habit Efficiency</span><strong id="analytics-habit-rate" class="metric-value positive">0%</strong></div>
+          </div>
+
+          <div class="panel">
+            <h3>System Status</h3>
+            <div class="system-health-list">
+              <div class="health-item"><span>Application Status</span><strong>Online (GitHub Pages)</strong></div>
+              <div class="health-item"><span>Storage & Encryption</span><strong>AES-GCM Authenticated Local Storage</strong></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- PROFILE & SECURITY SETTINGS TAB -->
+        <section id="tab-profile" class="tab-content">
+          <div class="notion-page-header">
+            <h1 class="page-title">Profile & Security Settings</h1>
+            <p class="page-subtitle">Manage your account details, password, security recovery question, and universal push notifications.</p>
+          </div>
+
+          <div class="panel-group">
+            <div class="panel">
+              <h3>Profile Information</h3>
+              <form id="profile-update-form" class="stacked-form">
+                <div class="form-group">
+                  <label for="prof-username">Username (Account ID)</label>
+                  <input type="text" id="prof-username" disabled style="opacity: 0.7; cursor: not-allowed;">
+                </div>
+                <div class="form-group">
+                  <label for="prof-name">Display Name</label>
+                  <input type="text" id="prof-name" required>
+                </div>
+                <div class="form-group">
+                  <label for="prof-bio">Workspace Bio / Focus Goal</label>
+                  <input type="text" id="prof-bio" placeholder="e.g. Computer Science Portfolio">
+                </div>
+                <button type="submit" class="btn primary">Update Profile</button>
+              </form>
+            </div>
+
+            <div class="panel">
+              <h3>Universal Push Notifications</h3>
+              <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 14px;">
+                Get native reminders for events and schedule blocks while Chronos is open or running in the background of your browser.
+              </p>
+              <div class="system-health-list" style="margin-bottom: 14px;">
+                <div class="health-item">
+                  <span>System Permission</span>
+                  <strong id="prof-notif-permission">Checking...</strong>
+                </div>
+              </div>
+              <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <button type="button" id="request-notif-btn" class="btn primary">Enable Push Alerts</button>
+                <button type="button" id="test-notif-btn" class="btn secondary">Send Test Alert</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel-group">
+            <div class="panel">
+              <h3>Change Password</h3>
+              <form id="change-password-form" class="stacked-form">
+                <div class="form-group">
+                  <label for="cp-current">Current Password</label>
+                  <input type="password" id="cp-current" placeholder="Enter current password" required>
+                </div>
+                <div class="form-group">
+                  <label for="cp-new">New Password</label>
+                  <input type="password" id="cp-new" placeholder="Enter new password" minlength="8" required>
+                </div>
+                <div class="form-group">
+                  <label for="cp-confirm">Confirm New Password</label>
+                  <input type="password" id="cp-confirm" placeholder="Repeat new password" required>
+                </div>
+                <button type="submit" class="btn primary">Update Password</button>
+              </form>
+            </div>
+
+            <div class="panel">
+              <h3>Security Question & Secret Word</h3>
+              <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;">
+                Protected recovery question for resetting your password. Saving changes requires password authorization.
+              </p>
+              <form id="security-question-form" class="stacked-form">
+                <div class="form-group">
+                  <label for="sq-hint">Hint Question</label>
+                  <input type="text" id="sq-hint" placeholder="Hint question" required>
+                </div>
+                <div class="form-group">
+                  <label for="sq-secret">Secret Word (Answer)</label>
+                  <input type="text" id="sq-secret" placeholder="Enter secret word" required>
+                </div>
+                <button type="submit" class="btn secondary">Save Security Question</button>
+              </form>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script src="js/cryptoEngine.js" defer></script>
+  <script src="js/storage.js" defer></script>
+  <script src="js/notificationModule.js" defer></script>
+  <script src="js/auth.js" defer></script>
+  <script src="js/calendarModule.js" defer></script>
+  <script src="js/timetableModule.js" defer></script>
+  <script src="js/habitTracker.js" defer></script>
+  <script src="js/budgetTracker.js" defer></script>
+  <script src="js/pomodoroKanban.js" defer></script>
+  <script src="js/notesModule.js" defer></script>
+  <script src="js/analyticsModule.js" defer></script>
+  <script src="js/commandPalette.js" defer></script>
+<script src="js/app.js" defer></script>
+</body>
+</html>

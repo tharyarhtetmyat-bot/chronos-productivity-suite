@@ -1,0 +1,16 @@
+{
+  "name": "Chronos Productivity Suite",
+  "short_name": "Chronos",
+  "description": "Unified Personal Productivity & Time-Blocking Suite",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2383e2",
+  "icons": [
+    {
+      "src": "assets/icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
